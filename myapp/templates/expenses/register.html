@@ -1,28 +1,297 @@
 {% extends 'expenses/base.html' %}
 
 {% block content %}
-<div class="container mt-5"></div>
-<header class="bg-dark py-5">
-  <div class="container px-4 px-lg-5 my-5">
-    <div class="text-center text-white">
-      <h1 class="display-4 fw-bolder">Register</h1>
-      <p class="lead fw-normal text-white-50 mb-4">
-        Register for a free account...
-      </p>
-    </div>
+<!-- Animated Background -->
+<div class="animated-background">
+  <div class="floating-shapes">
+    <div class="shape shape-1"></div>
+    <div class="shape shape-2"></div>
+    <div class="shape shape-3"></div>
+    <div class="shape shape-4"></div>
+    <div class="shape shape-5"></div>
+    <div class="shape shape-6"></div>
   </div>
-</header>
+  <div class="gradient-overlay"></div>
+</div>
 
-<div class="container mt-5">
-  <div class="row align-items-center">
-    <div class="col-md-6 offset-md-3">
-      <form method="POST" action="{% url 'register' %}">
-        {% csrf_token %}
-        {{ form.as_p }}
-        <button type="submit" class="btn btn-success w-100">Register</button>
-      </form>
-      <p class="mt-3">Already have an account? <a href="{% url 'login' %}">Login here.</a></p>
+<div class="container mt-5 position-relative">
+  <div class="row justify-content-center">
+    <div class="col-md-6 col-lg-5">
+      <div class="card shadow-lg animated-card">
+        <div class="card-body p-4">
+          <h2 class="card-title text-center mb-4 animated-title">Create Account</h2>
+          
+          <!-- Display non-field errors -->
+          {% if form.non_field_errors %}
+            <div class="alert alert-danger animate-slide-in" role="alert">
+              {{ form.non_field_errors }}
+            </div>
+          {% endif %}
+          
+          <!-- Display success messages -->
+          {% if messages %}
+            {% for message in messages %}
+              <div class="alert alert-{{ message.tags }} alert-dismissible fade show animate-slide-in" role="alert">
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+              </div>
+            {% endfor %}
+          {% endif %}
+          
+          <form method="POST" action="{% url 'register' %}" novalidate>
+            {% csrf_token %}
+            
+            <!-- Username field -->
+            <div class="mb-3 animate-field">
+              <label for="{{ form.username.id_for_label }}" class="form-label">
+                {{ form.username.label }}
+                {% if form.username.field.required %}
+                  <span class="text-danger">*</span>
+                {% endif %}
+              </label>
+              {{ form.username }}
+              {% if form.username.errors %}
+                <div class="invalid-feedback d-block">
+                  {% for error in form.username.errors %}
+                    {{ error }}
+                  {% endfor %}
+                </div>
+              {% endif %}
+              {% if form.username.help_text %}
+                <div class="help-text">{{ form.username.help_text|safe }}</div>
+              {% endif %}
+            </div>
+            
+            <!-- Email field (if present) -->
+            {% if form.email %}
+            <div class="mb-3 animate-field">
+              <label for="{{ form.email.id_for_label }}" class="form-label">
+                {{ form.email.label }}
+                {% if form.email.field.required %}
+                  <span class="text-danger">*</span>
+                {% endif %}
+              </label>
+              {{ form.email }}
+              {% if form.email.errors %}
+                <div class="invalid-feedback d-block">
+                  {% for error in form.email.errors %}
+                    {{ error }}
+                  {% endfor %}
+                </div>
+              {% endif %}
+            </div>
+            {% endif %}
+            
+            <!-- Password field -->
+            <div class="mb-3 animate-field">
+              <label for="{{ form.password1.id_for_label }}" class="form-label">
+                {{ form.password1.label }}
+                {% if form.password1.field.required %}
+                  <span class="text-danger">*</span>
+                {% endif %}
+              </label>
+              <div class="input-group">
+                {{ form.password1 }}
+                <button class="btn btn-outline-secondary" type="button" id="togglePassword1">
+                  <i class="fas fa-eye" id="eyeIcon1"></i>
+                </button>
+              </div>
+              {% if form.password1.errors %}
+                <div class="invalid-feedback d-block">
+                  {% for error in form.password1.errors %}
+                    {{ error }}
+                  {% endfor %}
+                </div>
+              {% endif %}
+              {% if form.password1.help_text %}
+                <div class="password-requirements">
+                  {{ form.password1.help_text|safe }}
+                </div>
+              {% endif %}
+            </div>
+            
+            <!-- Password confirmation field -->
+            <div class="mb-4 animate-field">
+              <label for="{{ form.password2.id_for_label }}" class="form-label">
+                {{ form.password2.label }}
+                {% if form.password2.field.required %}
+                  <span class="text-danger">*</span>
+                {% endif %}
+              </label>
+              <div class="input-group">
+                {{ form.password2 }}
+                <button class="btn btn-outline-secondary" type="button" id="togglePassword2">
+                  <i class="fas fa-eye" id="eyeIcon2"></i>
+                </button>
+              </div>
+              {% if form.password2.errors %}
+                <div class="invalid-feedback d-block">
+                  {% for error in form.password2.errors %}
+                    {{ error }}
+                  {% endfor %}
+                </div>
+              {% endif %}
+            </div>
+            
+            <!-- Submit button -->
+            <div class="d-grid animate-field">
+              <button type="submit" class="btn btn-success btn-lg animated-button">
+                <i class="fas fa-user-plus me-2"></i>Create Account
+              </button>
+            </div>
+          </form>
+          
+          <!-- Login link -->
+          <div class="text-center mt-4 animate-field">
+            <p class="mb-0">Already have an account? 
+              <a href="{% url 'login' %}" class="text-decoration-none animated-link">Login here</a>
+            </p>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 </div>
+
+<!-- JavaScript for password visibility toggle -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  // Password visibility toggle functionality
+  function setupPasswordToggle(toggleId, passwordId, iconId) {
+    const toggleButton = document.getElementById(toggleId);
+    const passwordField = document.getElementById(passwordId);
+    const eyeIcon = document.getElementById(iconId);
+    
+    if (toggleButton && passwordField && eyeIcon) {
+      toggleButton.addEventListener('click', function() {
+        const type = passwordField.getAttribute('type') === 'password' ? 'text' : 'password';
+        passwordField.setAttribute('type', type);
+        
+        // Toggle eye icon
+        if (type === 'text') {
+          eyeIcon.classList.remove('fa-eye');
+          eyeIcon.classList.add('fa-eye-slash');
+        } else {
+          eyeIcon.classList.remove('fa-eye-slash');
+          eyeIcon.classList.add('fa-eye');
+        }
+      });
+    }
+  }
+  
+  // Setup toggles for both password fields
+  setupPasswordToggle('togglePassword1', 'id_password1', 'eyeIcon1');
+  setupPasswordToggle('togglePassword2', 'id_password2', 'eyeIcon2');
+  
+  // Add Bootstrap classes to form fields
+  const formFields = document.querySelectorAll('input[type="text"], input[type="email"], input[type="password"]');
+  formFields.forEach(field => {
+    field.classList.add('form-control');
+    
+    // Add error styling if field has errors
+    const errorDiv = field.parentNode.querySelector('.invalid-feedback');
+    if (errorDiv) {
+      field.classList.add('is-invalid');
+    }
+  });
+});
+</script>
+
+<style>
+.card {
+  border: none;
+  border-radius: 10px;
+}
+
+.form-control:focus {
+  border-color: #28a745;
+  box-shadow: 0 0 0 0.2rem rgba(40, 167, 69, 0.25);
+}
+
+.btn-success {
+  background-color: #28a745;
+  border-color: #28a745;
+  transition: all 0.3s ease;
+}
+
+.btn-success:hover {
+  background-color: #218838;
+  border-color: #1e7e34;
+  transform: translateY(-1px);
+}
+
+.input-group-text {
+  background-color: #f8f9fa;
+  border-left: none;
+}
+
+.alert {
+  border-radius: 8px;
+}
+
+.text-danger {
+  font-weight: 500;
+}
+
+.form-text {
+  font-size: 0.875rem;
+  color: #6c757d;
+}
+
+/* Fix for Django help text styling */
+.form-text span {
+  display: block;
+}
+
+.form-text small {
+  font-size: 0.875rem;
+  color: #6c757d;
+  display: block;
+  margin-top: 0.25rem;
+}
+
+/* Fix for Django password help text styling */
+.form-text ul {
+  list-style-type: disc;
+  margin-left: 1.5rem;
+  margin-bottom: 0.5rem;
+  padding-left: 0;
+}
+
+.form-text li {
+  margin-bottom: 0.25rem;
+  display: list-item;
+}
+
+/* Enhanced help text styling */
+.help-text {
+  background-color: #f8f9fa;
+  border: 1px solid #e9ecef;
+  border-radius: 0.25rem;
+  padding: 0.5rem;
+  margin-top: 0.5rem;
+  font-size: 0.875rem;
+  color: #495057;
+}
+
+/* Alternative styling - cleaner look */
+.password-requirements {
+  background-color: #f8f9fa;
+  border-left: 3px solid #28a745;
+  padding: 0.75rem;
+  margin-top: 0.5rem;
+  border-radius: 0.25rem;
+}
+
+.password-requirements ul {
+  margin-bottom: 0;
+  padding-left: 1.25rem;
+}
+
+.password-requirements li {
+  margin-bottom: 0.25rem;
+  font-size: 0.875rem;
+  color: #495057;
+}
+</style>
 {% endblock %}

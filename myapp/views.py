@@ -25,7 +25,7 @@ def register_user(request):
     else:
         messages.error(
                 request,
-                "Oops something went wrong with your registration, please try again.",
+                "",
             )
         return render(request,'expenses/register.html',{'form':form})
 
