@@ -10,6 +10,7 @@
                 </h2>
                 <p class="text-center text-muted mb-4">Group: <strong>{{ group.name }}</strong></p>
                 
+                <!-- Add Roommate Form -->
                 <form method="post">
                     {% csrf_token %}
                     <div class="mb-3">
@@ -24,21 +25,37 @@
                     </div>
                 </form>
                 
+                <!-- Group Members List -->
                 <div class="mt-4">
                     <h5>Current Members:</h5>
                     <ul class="list-group">
+                        <!-- Show creator at the top -->
                         <li class="list-group-item d-flex justify-content-between align-items-center">
                             {{ group.created_by.get_full_name|default:group.created_by.username }}
                             <span class="badge bg-primary rounded-pill">Creator</span>
                         </li>
+
+                        <!-- Loop through group members excluding creator -->
                         {% for member in group.members.all %}
-                        <li class="list-group-item">
-                            {{ member.user.get_full_name|default:member.user.username }}
-                        </li>
+                            {% if member.user != group.created_by %}
+                            <li class="list-group-item d-flex justify-content-between align-items-center">
+                                {{ member.user.get_full_name|default:member.user.username }}
+                                
+                                {% if request.user == group.created_by %}
+                                <form action="{% url 'remove_roommate' group.id member.user.id %}" method="post" class="d-inline">
+                                    {% csrf_token %}
+                                    <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('Remove this roommate?');" title="Remove">
+                                        <i class="fas fa-user-minus"></i>
+                                    </button>
+                                </form>
+                                {% endif %}
+                            </li>
+                            {% endif %}
                         {% endfor %}
                     </ul>
                 </div>
-                
+
+                <!-- Back to Dashboard -->
                 <div class="text-center mt-4">
                     <a href="{% url 'dashboard' %}" class="btn btn-outline-secondary">
                         <i class="fas fa-arrow-left me-2"></i>Back to Dashboard

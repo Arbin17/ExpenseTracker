@@ -142,6 +142,25 @@ def add_roommate(request, group_id):
         form = AddRoommateForm()
     
     return render(request, 'expenses/add_roommate.html', {'form': form, 'group': group})
+@login_required
+def remove_roommate(request, group_id, user_id):
+    group = get_object_or_404(RoommateGroup, id=group_id)
+
+    if group.created_by != request.user:
+        messages.error(request, "Only group creator can remove roommates.")
+        return redirect('dashboard')
+
+    try:
+        user_to_remove = User.objects.get(id=user_id)
+        membership = RoommateGroupMember.objects.get(group=group, user=user_to_remove)
+        membership.delete()
+        messages.success(request, f"{user_to_remove.username} has been removed from the group.")
+    except User.DoesNotExist:
+        messages.error(request, "User does not exist.")
+    except RoommateGroupMember.DoesNotExist:
+        messages.warning(request, "This user is not a member of the group.")
+
+    return redirect('dashboard')
 
 @login_required
 def monthly_summary(request, group_id):
