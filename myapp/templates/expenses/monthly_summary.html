@@ -1,0 +1,157 @@
+{% extends 'expenses/base.html' %}
+{% load custom_filters %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="card card-custom mb-4">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <h2><i class="fas fa-chart-bar me-2"></i>Monthly Summary - {{ group.name }}</h2>
+                    <a href="{% url 'dashboard' %}" class="btn btn-outline-secondary">
+                        <i class="fas fa-arrow-left me-2"></i>Back to Dashboard
+                    </a>
+                </div>
+                
+                <div class="row mb-4">
+                    <div class="col-md-4">
+                        <div class="card bg-primary text-white">
+                            <div class="card-body text-center">
+                                <h3>Rs{{ total_expenses }}</h3>
+                                <p class="mb-0">Total Expenses</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card bg-success text-white">
+                            <div class="card-body text-center">
+                                <h3>Rs{{ equal_share|floatformat:2 }}</h3>
+                                <p class="mb-0">Per Person</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card bg-info text-white">
+                            <div class="card-body text-center">
+                                <h3>{{ all_members|length }}</h3>
+                                <p class="mb-0">Total Members</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="row">
+                    <div class="col-md-6">
+                        <h4><i class="fas fa-users me-2"></i>Individual Contributions</h4>
+                        <div class="table-responsive">
+                            <table class="table table-striped">
+                                <thead>
+                                    <tr>
+                                        <th>Member</th>
+                                        <th>Paid</th>
+                                        <th>Share</th>
+                                        <th>Balance</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for member in all_members %}
+                                    <tr>
+                                        <td>{{ member.get_full_name|default:member.username }}</td>
+                                        <td>Rs{{ member_contributions|get_item:member|floatformat:2 }}</td>
+                                        <td>Rs{{ equal_share|floatformat:2 }}</td>
+                                        <td>
+                                            {% with balances|get_item:member as balance %}
+                                                {% if balance > 0 %}
+                                                    <span class="balance-positive">+Rs{{ balance|abs_val|floatformat:2 }}</span>
+                                                    <small class="text-muted d-block">Should receive</small>
+                                                {% elif balance < 0 %}
+                                                    <span class="balance-negative">-Rs{{ balance|abs_val|floatformat:2 }}</span>
+                                                    <small class="text-muted d-block">Owes</small>
+                                                {% else %}
+                                                    <span class="text-success">Rs0.00</span>
+                                                    <small class="text-muted d-block">Even</small>
+                                                {% endif %}
+                                            {% endwith %}
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-6">
+                        <h4><i class="fas fa-exchange-alt me-2"></i>Settlement Summary</h4>
+                        <div class="alert alert-info">
+                            <h6><i class="fas fa-info-circle me-2"></i>Who Should Pay Whom:</h6>
+                            {% for member in all_members %}
+                                {% with balances|get_item:member as balance %}
+                                    {% if balance > 0 %}
+                                        <div class="mb-2">
+                                            <strong>{{ member.get_full_name|default:member.username }}</strong> should receive 
+                                            <span class="balance-positive">Rs{{ balance|abs_val|floatformat:2 }}</span>
+                                        </div>
+                                    {% elif balance < 0 %}
+                                        <div class="mb-2">
+                                            <strong>{{ member.get_full_name|default:member.username }}</strong> owes 
+                                            <span class="balance-negative">Rs{{ balance|abs_val|floatformat:2 }}</span>
+                                        </div>
+                                    {% endif %}
+                                {% endwith %}
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="card card-custom">
+            <div class="card-body">
+                <h4><i class="fas fa-list me-2"></i>All Expenses This Month</h4>
+                
+                {% if expenses %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Title</th>
+                                    <th>Category</th>
+                                    <th>Paid By</th>
+                                    <th>Amount</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for expense in expenses %}
+                                <tr>
+                                    <td>{{ expense.date_added|date:"M d, Y" }}</td>
+                                    <td>
+                                        <strong>{{ expense.title }}</strong>
+                                        {% if expense.description %}
+                                            <br><small class="text-muted">{{ expense.description }}</small>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-secondary">{{ expense.category|title }}</span>
+                                    </td>
+                                    <td>{{ expense.paid_by.get_full_name|default:expense.paid_by.username }}</td>
+                                    <td><strong class="text-success">Rs{{ expense.amount }}</strong></td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <div class="text-center py-4">
+                        <i class="fas fa-receipt fa-3x text-muted mb-3"></i>
+                        <p class="text-muted">No expenses recorded for this month.</p>
+                        <a href="{% url 'add_expense' group.id %}" class="btn btn-custom">
+                            <i class="fas fa-plus me-2"></i>Add First Expense
+                        </a>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,97 @@
+{% extends 'expenses/base.html' %}
+
+{% block content %}
+<div class="row">
+  <!-- Groups Section -->
+  <div class="col-md-8">
+    <section class="card card-custom mb-4">
+      <div class="card-body">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <h3 class="mb-0"><i class="fas fa-users me-2"></i>Your Groups</h3>
+          <a href="{% url 'create_group' %}" class="btn btn-custom">
+            <i class="fas fa-plus me-2"></i>Create Group
+          </a>
+        </div>
+
+        {% if user_groups %}
+          <div class="row">
+            {% for group in user_groups %}
+              <div class="col-md-6 mb-3">
+                <article class="card h-100">
+                  <div class="card-body">
+                    <h5 class="card-title">{{ group.name }}</h5>
+                    <p class="card-text text-muted">
+                      Created by: {{ group.created_by.get_full_name|default:group.created_by.username }}
+                    </p>
+                    <div class="btn-group w-100" role="group" aria-label="Group actions">
+                      <a href="{% url 'add_expense' group.id %}" class="btn btn-outline-primary btn-sm">
+                        <i class="fas fa-plus me-1"></i>Add Expense
+                      </a>
+                      <a href="{% url 'monthly_summary' group.id %}" class="btn btn-outline-success btn-sm">
+                        <i class="fas fa-chart-bar me-1"></i>Summary
+                      </a>
+                      {% if group.created_by == user %}
+                        <a href="{% url 'add_roommate' group.id %}" class="btn btn-outline-info btn-sm">
+                          <i class="fas fa-user-plus me-1"></i>Add Roommate
+                        </a>
+                      {% endif %}
+                    </div>
+                  </div>
+                </article>
+              </div>
+            {% endfor %}
+          </div>
+        {% else %}
+          <div class="text-center py-4">
+            <i class="fas fa-users fa-3x text-muted mb-3"></i>
+            <p class="text-muted mb-0">You're not part of any groups yet. Create one to get started!</p>
+          </div>
+        {% endif %}
+      </div>
+    </section>
+
+    <!-- Recent Expenses Section -->
+    <section class="card card-custom">
+      <div class="card-body">
+        <h3 class="mb-3"><i class="fas fa-clock me-2"></i>Recent Expenses</h3>
+
+        {% if recent_expenses %}
+          {% for expense in recent_expenses %}
+            <article class="expense-item">
+              <div class="d-flex justify-content-between align-items-center">
+                <div>
+                  <h6 class="mb-1">{{ expense.title }}</h6>
+                  <small class="text-muted">
+                    {{ expense.category|title }} • {{ expense.group.name }} • 
+                    Paid by {{ expense.paid_by.get_full_name|default:expense.paid_by.username }}
+                  </small>
+                </div>
+                <div class="text-end">
+                  <strong class="text-primary">Rs{{ expense.amount }}</strong><br>
+                  <small class="text-muted">{{ expense.date_added|date:"M d, Y" }}</small>
+                </div>
+              </div>
+            </article>
+          {% endfor %}
+        {% else %}
+          <div class="text-center py-4">
+            <i class="fas fa-receipt fa-3x text-muted mb-3"></i>
+            <p class="text-muted mb-0">No expenses recorded yet.</p>
+          </div>
+        {% endif %}
+      </div>
+    </section>
+  </div>
+
+  <!-- Monthly Total Section -->
+  <aside class="col-md-4">
+    <section class="card card-custom text-center">
+      <div class="card-body">
+        <h3><i class="fas fa-dollar-sign me-2"></i>This Month</h3>
+        <h2 class="text-primary mb-1">Rs{{ monthly_total }}</h2>
+        <p class="text-muted">Total Expenses</p>
+      </div>
+    </section>
+  </aside>
+</div>
+{% endblock %}
