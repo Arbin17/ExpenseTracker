@@ -21,10 +21,6 @@ def register_user(request):
             password = form.cleaned_data["password1"]
             user = authenticate(username=username, password=password)
             login(request, user)
-            messages.success(
-                request,
-            "Great, your account is successfully registered. Please complete your personal information.",
-            )
             return redirect('login')
     else:
         messages.error(
@@ -40,7 +36,6 @@ def login_user(request):
         user =  authenticate(request,username=username,password=password)
         if user is not None:
             login(request,user)
-            messages.success(request,"Welcome....")
             return redirect('dashboard')
         else:
             messages.success(request,("Something went wrong...."))
@@ -53,8 +48,9 @@ def login_user(request):
 
 def logout_user(request):
     logout(request)
-    messages.success(request,"You have been loged out ...")
+
     return redirect('login')
+
 @login_required
 def dashboard(request):
     # Get user's groups
