@@ -69,6 +69,7 @@ def dashboard(request):
     current_month = timezone.now().replace(day=1, hour=0, minute=0, second=0, microsecond=0)
     monthly_total = Expense.objects.filter(
         group__in=user_groups,
+        paid_by=request.user,  # ✅ Add this filter
         date_added__gte=current_month
     ).aggregate(total=Sum('amount'))['total'] or 0
     
