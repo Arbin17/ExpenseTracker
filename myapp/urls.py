@@ -12,4 +12,5 @@ urlpatterns = [
     path('add-roommate/<int:group_id>/', views.add_roommate, name='add_roommate'),
     path('monthly-summary/<int:group_id>/', views.monthly_summary, name='monthly_summary'),
     path('group/<int:group_id>/remove-roommate/<int:user_id>/', views.remove_roommate, name='remove_roommate'),
+    path('group/<int:group_id>/delete/', views.delete_group, name='delete_group'),
 ]

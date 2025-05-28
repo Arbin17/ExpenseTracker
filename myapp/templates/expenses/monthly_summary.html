@@ -2,78 +2,86 @@
 {% load custom_filters %}
 
 {% block content %}
-<div class="row gy-4">
+<div class="row">
     <div class="col-12">
         <div class="card card-custom mb-4">
             <div class="card-body">
-                <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center mb-4">
-                    <h2 class="mb-3 mb-md-0">
-                        <i class="fas fa-chart-bar me-2"></i>Monthly Summary - {{ group.name }}
-                    </h2>
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <h2><i class="fas fa-chart-bar me-2"></i>Monthly Summary - {{ group.name }}</h2>
                     <a href="{% url 'dashboard' %}" class="btn btn-outline-secondary">
                         <i class="fas fa-arrow-left me-2"></i>Back to Dashboard
                     </a>
                 </div>
-
-                <div class="row text-center mb-4">
-                    <div class="col-12 col-sm-4 mb-3 mb-sm-0">
-                        <div class="card bg-primary text-white h-100">
-                            <div class="card-body">
-                                <h3>Rs{{ total_expenses }}</h3>
+                
+                <div class="row mb-4">
+                    <div class="col-md-3">
+                        <div class="card bg-primary text-white">
+                            <div class="card-body text-center">
+                                <h3>${{ total_expenses }}</h3>
                                 <p class="mb-0">Total Expenses</p>
                             </div>
                         </div>
                     </div>
-                    <div class="col-12 col-sm-4 mb-3 mb-sm-0">
-                        <div class="card bg-success text-white h-100">
-                            <div class="card-body">
-                                <h3>Rs{{ equal_share|floatformat:2 }}</h3>
-                                <p class="mb-0">Per Person</p>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-12 col-sm-4">
-                        <div class="card bg-info text-white h-100">
-                            <div class="card-body">
+                    <div class="col-md-3">
+                        <div class="card bg-info text-white">
+                            <div class="card-body text-center">
                                 <h3>{{ all_members|length }}</h3>
                                 <p class="mb-0">Total Members</p>
                             </div>
                         </div>
                     </div>
+                    <div class="col-md-3">
+                        <div class="card bg-warning text-white">
+                            <div class="card-body text-center">
+                                <h3>{{ expenses_with_info|length }}</h3>
+                                <p class="mb-0">Total Expenses</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card bg-success text-white">
+                            <div class="card-body text-center">
+                                <h3>
+                                    {% for member, data in member_data.items %}
+                                        {% if data.balance == 0 %}1{% endif %}
+                                    {% empty %}0{% endfor %}
+                                </h3>
+                                <p class="mb-0">Members Even</p>
+                            </div>
+                        </div>
+                    </div>
                 </div>
-
-                <div class="row gy-4">
-                    <div class="col-12 col-lg-6">
-                        <h4><i class="fas fa-users me-2"></i>Individual Contributions</h4>
+                
+                <div class="row">
+                    <div class="col-md-6">
+                        <h4><i class="fas fa-users me-2"></i>Individual Balances</h4>
                         <div class="table-responsive">
-                            <table class="table table-striped align-middle">
+                            <table class="table table-striped">
                                 <thead>
                                     <tr>
                                         <th>Member</th>
                                         <th>Paid</th>
-                                        <th>Share</th>
+                                        <th>Should Pay</th>
                                         <th>Balance</th>
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {% for member in all_members %}
+                                    {% for member, data in member_data.items %}
                                     <tr>
                                         <td>{{ member.get_full_name|default:member.username }}</td>
-                                        <td>Rs{{ member_contributions|get_item:member|floatformat:2 }}</td>
-                                        <td>Rs{{ equal_share|floatformat:2 }}</td>
+                                        <td>${{ data.paid|floatformat:2 }}</td>
+                                        <td>${{ data.should_pay|floatformat:2 }}</td>
                                         <td>
-                                            {% with balances|get_item:member as balance %}
-                                                {% if balance > 0 %}
-                                                    <span class="balance-positive">+Rs{{ balance|abs_val|floatformat:2 }}</span>
-                                                    <small class="text-muted d-block">Should receive</small>
-                                                {% elif balance < 0 %}
-                                                    <span class="balance-negative">-Rs{{ balance|abs_val|floatformat:2 }}</span>
-                                                    <small class="text-muted d-block">Owes</small>
-                                                {% else %}
-                                                    <span class="text-success">Rs0.00</span>
-                                                    <small class="text-muted d-block">Even</small>
-                                                {% endif %}
-                                            {% endwith %}
+                                            {% if data.balance > 0 %}
+                                                <span class="balance-positive">+Rs{{ data.balance|floatformat:2 }}</span>
+                                                <small class="text-muted d-block">Should receive</small>
+                                            {% elif data.balance < 0 %}
+                                                <span class="balance-negative">-${{ data.balance|abs_val|floatformat:2 }}</span>
+                                                <small class="text-muted d-block">Owes</small>
+                                            {% else %}
+                                                <span class="text-success">$0.00</span>
+                                                <small class="text-muted d-block">Even</small>
+                                            {% endif %}
                                         </td>
                                     </tr>
                                     {% endfor %}
@@ -81,38 +89,37 @@
                             </table>
                         </div>
                     </div>
-
-                    <div class="col-12 col-lg-6">
+                    
+                    <div class="col-md-6">
                         <h4><i class="fas fa-exchange-alt me-2"></i>Settlement Summary</h4>
                         <div class="alert alert-info">
                             <h6><i class="fas fa-info-circle me-2"></i>Who Should Pay Whom:</h6>
-                            {% for member in all_members %}
-                                {% with balances|get_item:member as balance %}
-                                    {% if balance > 0 %}
-                                        <div class="mb-2">
-                                            <strong>{{ member.get_full_name|default:member.username }}</strong> should receive 
-                                            <span class="balance-positive">Rs{{ balance|abs_val|floatformat:2 }}</span>
-                                        </div>
-                                    {% elif balance < 0 %}
-                                        <div class="mb-2">
-                                            <strong>{{ member.get_full_name|default:member.username }}</strong> owes 
-                                            <span class="balance-negative">Rs{{ balance|abs_val|floatformat:2 }}</span>
-                                        </div>
-                                    {% endif %}
-                                {% endwith %}
+                            {% for member, data in member_data.items %}
+                                {% if data.balance > 0 %}
+                                    <div class="mb-2">
+                                        <strong>{{ member.get_full_name|default:member.username }}</strong> should receive 
+                                        <span class="balance-positive">${{ data.balance|floatformat:2 }}</span>
+                                    </div>
+                                {% elif data.balance < 0 %}
+                                    <div class="mb-2">
+                                        <strong>{{ member.get_full_name|default:member.username }}</strong> owes 
+                                        <span class="balance-negative">${{ data.balance|abs_val|floatformat:2 }}</span>
+                                    </div>
+                                {% endif %}
                             {% endfor %}
                         </div>
                     </div>
                 </div>
             </div>
         </div>
-
+        
         <div class="card card-custom">
             <div class="card-body">
                 <h4><i class="fas fa-list me-2"></i>All Expenses This Month</h4>
-                {% if expenses %}
+                
+                {% if expenses_with_info %}
                     <div class="table-responsive">
-                        <table class="table table-hover align-middle">
+                        <table class="table table-hover">
                             <thead>
                                 <tr>
                                     <th>Date</th>
@@ -120,23 +127,59 @@
                                     <th>Category</th>
                                     <th>Paid By</th>
                                     <th>Amount</th>
+                                    <th>Split Details</th>
                                 </tr>
                             </thead>
                             <tbody>
-                                {% for expense in expenses %}
+                                {% for expense_info in expenses_with_info %}
                                 <tr>
-                                    <td>{{ expense.date_added|date:"M d, Y" }}</td>
+                                    <td>{{ expense_info.expense.date_added|date:"M d, Y" }}</td>
                                     <td>
-                                        <strong>{{ expense.title }}</strong>
-                                        {% if expense.description %}
-                                            <br><small class="text-muted">{{ expense.description }}</small>
+                                        <strong>{{ expense_info.expense.title }}</strong>
+                                        {% if expense_info.expense.description %}
+                                            <br><small class="text-muted">{{ expense_info.expense.description }}</small>
                                         {% endif %}
                                     </td>
                                     <td>
-                                        <span class="badge bg-secondary">{{ expense.category|title }}</span>
+                                        <span class="badge bg-secondary">{{ expense_info.expense.category|title }}</span>
                                     </td>
-                                    <td>{{ expense.paid_by.get_full_name|default:expense.paid_by.username }}</td>
-                                    <td><strong class="text-success">Rs{{ expense.amount }}</strong></td>
+                                    <td>{{ expense_info.expense.paid_by.get_full_name|default:expense_info.expense.paid_by.username }}</td>
+                                    <td><strong class="text-success">${{ expense_info.expense.amount }}</strong></td>
+                                    <td>
+                                        <div class="small">
+                                            <strong>Split among {{ expense_info.participant_count }} member{{ expense_info.participant_count|pluralize }}</strong><br>
+                                            <span class="text-success">${{ expense_info.individual_share|floatformat:2 }} per person</span>
+                                            
+                                            {% if expense_info.excluded_members %}
+                                                <br>
+                                                <span class="text-warning">
+                                                    <i class="fas fa-user-minus me-1"></i>Excluded: 
+                                                    {% for excluded in expense_info.excluded_members %}
+                                                        {{ excluded.get_full_name|default:excluded.username }}{% if not forloop.last %}, {% endif %}
+                                                    {% endfor %}
+                                                </span>
+                                            {% endif %}
+                                            
+                                            <br>
+                                            <button class="btn btn-link btn-sm p-0 text-decoration-none" type="button" 
+                                                    data-bs-toggle="collapse" 
+                                                    data-bs-target="#participants-{{ expense_info.expense.id }}" 
+                                                    aria-expanded="false">
+                                                <i class="fas fa-eye me-1"></i>View participants
+                                            </button>
+                                            
+                                            <div class="collapse mt-2" id="participants-{{ expense_info.expense.id }}">
+                                                <div class="card card-body bg-light">
+                                                    <strong>Participating members:</strong><br>
+                                                    {% for participant in expense_info.participating_members %}
+                                                        <span class="badge bg-primary me-1 mb-1">
+                                                            {{ participant.get_full_name|default:participant.username }}
+                                                        </span>
+                                                    {% endfor %}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </td>
                                 </tr>
                                 {% endfor %}
                             </tbody>
@@ -155,4 +198,29 @@
         </div>
     </div>
 </div>
+
+<style>
+.balance-positive {
+    color: #28a745;
+    font-weight: bold;
+}
+
+.balance-negative {
+    color: #dc3545;
+    font-weight: bold;
+}
+
+.btn-link {
+    font-size: 0.875rem;
+}
+
+.card-body.bg-light {
+    background-color: #f8f9fa !important;
+    border-radius: 8px;
+}
+
+.badge {
+    font-size: 0.75rem;
+}
+</style>
 {% endblock %}

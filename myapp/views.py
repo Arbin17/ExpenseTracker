@@ -6,6 +6,8 @@ from django.contrib.auth.models import User
 from django.contrib import messages
 from .forms import SignUpForm
 from django.db.models import Sum, Q
+from django.http import HttpResponseForbidden
+from decimal import Decimal
 from django.utils import timezone
 from datetime import datetime, timedelta
 from .models import RoommateGroup, RoommateGroupMember, Expense
@@ -88,16 +90,29 @@ def add_expense(request, group_id):
         return redirect('dashboard')
     
     if request.method == 'POST':
-        form = ExpenseForm(request.POST)
+        form = ExpenseForm(request.POST, group=group)
         if form.is_valid():
             expense = form.save(commit=False)
             expense.paid_by = request.user
             expense.group = group
             expense.save()
-            messages.success(request, "Expense added successfully!")
+            
+            # Save the excluded members (many-to-many field)
+            form.save_m2m()
+            
+            # Show success message with participation details
+            participating_count = len(expense.get_participating_members())
+            total_members = len(group.get_all_members())
+            excluded_count = total_members - participating_count
+            
+            success_msg = f"Expense added successfully! Split among {participating_count} members"
+            if excluded_count > 0:
+                success_msg += f" ({excluded_count} member{'s' if excluded_count > 1 else ''} excluded)"
+            
+            messages.success(request, success_msg)
             return redirect('dashboard')
     else:
-        form = ExpenseForm()
+        form = ExpenseForm(group=group)
     
     return render(request, 'expenses/add_expense.html', {'form': form, 'group': group})
 
@@ -183,38 +198,77 @@ def monthly_summary(request, group_id):
     total_expenses = expenses.aggregate(total=Sum('amount'))['total'] or 0
     
     # Get all group members
-    all_members = [group.created_by]
-    all_members.extend([member.user for member in group.members.all()])
+    all_members = group.get_all_members()
     
-    # Calculate individual contributions
-    member_contributions = {}
+    # Calculate individual contributions and what they should pay
+    member_data = {}
     for member in all_members:
-        contribution = expenses.filter(paid_by=member).aggregate(total=Sum('amount'))['total'] or 0
-        member_contributions[member] = contribution
+        # How much they actually paid
+        paid_amount = expenses.filter(paid_by=member).aggregate(total=Sum('amount'))['total'] or Decimal('0.00')
+        
+        # How much they should pay (sum of their shares in all expenses they participate in)
+        should_pay = Decimal('0.00')
+        for expense in expenses:
+            participating_members = expense.get_participating_members()
+            if member in participating_members:
+                should_pay += expense.get_individual_share()
+        
+        # Calculate balance (positive means they should receive money, negative means they owe)
+        balance = paid_amount - should_pay
+        
+        member_data[member] = {
+            'paid': paid_amount,
+            'should_pay': should_pay,
+            'balance': balance
+        }
     
-    # Calculate equal share
-    equal_share = total_expenses / len(all_members) if all_members else 0
-    
-    # Calculate balances (who owes/is owed)
-    balances = {}
-    for member in all_members:
-        balance = member_contributions[member] - equal_share
-        balances[member] = balance
+    # Prepare expenses with participation info
+    expenses_with_info = []
+    for expense in expenses:
+        participating_members = expense.get_participating_members()
+        excluded_members = list(expense.excluded_members.all())
+        
+        expenses_with_info.append({
+            'expense': expense,
+            'participating_members': participating_members,
+            'excluded_members': excluded_members,
+            'individual_share': expense.get_individual_share(),
+            'participant_count': len(participating_members)
+        })
     
     context = {
         'group': group,
-        'expenses': expenses,
+        'expenses_with_info': expenses_with_info,
         'total_expenses': total_expenses,
-        'equal_share': equal_share,
-        'member_contributions': member_contributions,
-        'balances': balances,
         'all_members': all_members,
-        'members_data': [
-            {
-                'member': member,
-                'contribution': member_contributions[member],
-                'balance': balances[member]
-            } for member in all_members
-        ]
+        'member_data': member_data,
     }
     return render(request, 'expenses/monthly_summary.html', context)
+
+@login_required
+def delete_group(request, group_id):
+    """
+    Delete a group - only the creator can delete the group.
+    This will also delete all associated expenses and memberships.
+    """
+    group = get_object_or_404(RoommateGroup, id=group_id)
+    
+    # Check if the current user is the creator of the group
+    if request.user != group.created_by:
+        messages.error(request, "You don't have permission to delete this group.")
+        return HttpResponseForbidden("You don't have permission to delete this group.")
+    
+    if request.method == 'POST':
+        group_name = group.name
+        
+        # Django's CASCADE delete will automatically handle:
+        # - GroupMember objects related to this group
+        # - Expense objects related to this group
+        # - Any other related objects with CASCADE foreign keys
+        group.delete()
+        
+        messages.success(request, f'Group "{group_name}" has been deleted successfully.')
+        return redirect('dashboard')  # or whatever your main page URL name is
+    
+    # If it's a GET request, redirect back to dashboard
+    return redirect('dashboard')

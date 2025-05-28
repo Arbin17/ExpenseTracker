@@ -73,13 +73,36 @@ class CustomUserCreationForm(UserCreationForm):
 class ExpenseForm(forms.ModelForm):
     class Meta:
         model = Expense
-        fields = ['title', 'amount', 'category', 'description']
+        fields = ['title', 'amount', 'category', 'description', 'excluded_members']
         widgets = {
             'title': forms.TextInput(attrs={'class': 'form-control'}),
             'amount': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'}),
             'category': forms.Select(attrs={'class': 'form-control'}),
             'description': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
+            'excluded_members': forms.CheckboxSelectMultiple(attrs={'class': 'form-check-input'}),
         }
+        labels = {
+            'excluded_members': 'Exclude these members from this expense',
+        }
+    
+    def __init__(self, *args, **kwargs):
+        group = kwargs.pop('group', None)
+        super().__init__(*args, **kwargs)
+        
+        if group:
+            # Get all group members including the creator
+            all_members = group.get_all_members()
+            
+            # Set the queryset for excluded_members to only include group members
+            self.fields['excluded_members'].queryset = User.objects.filter(id__in=[member.id for member in all_members])
+            
+            # Customize the display of member names
+            choices = []
+            for member in all_members:
+                display_name = member.get_full_name() or member.username
+                choices.append((member.id, display_name))
+            
+            self.fields['excluded_members'].choices = choices
 
 class RoommateGroupForm(forms.ModelForm):
     class Meta:

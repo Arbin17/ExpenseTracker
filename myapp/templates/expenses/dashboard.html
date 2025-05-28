@@ -19,7 +19,33 @@
               <div class="col-12 col-sm-6 mb-3">
                 <article class="card h-100">
                   <div class="card-body">
-                    <h5 class="card-title">{{ group.name }}</h5>
+                    <div class="d-flex justify-content-between align-items-start mb-2">
+                      <h5 class="card-title mb-0">{{ group.name }}</h5>
+                      {% if user == group.created_by %}
+                        <div class="dropdown">
+                          <button class="btn btn-sm btn-outline-secondary" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                            <i class="fas fa-ellipsis-v"></i>
+                          </button>
+                          <ul class="dropdown-menu dropdown-menu-end">
+                            <li>
+                              <a class="dropdown-item" href="{% url 'add_roommate' group.id %}">
+                                <i class="fas fa-user-plus me-2"></i>Add Roommate
+                              </a>
+                            </li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li>
+                              <form method="post" action="{% url 'delete_group' group.id %}" class="d-inline">
+                                {% csrf_token %}
+                                <button type="submit" class="dropdown-item text-danger" onclick="return confirm('Are you sure you want to delete this group? This action cannot be undone and will remove all associated expenses.');">
+                                  <i class="fas fa-trash me-2"></i>Delete Group
+                                </button>
+                              </form>
+                            </li>
+                          </ul>
+                        </div>
+                      {% endif %}
+                    </div>
+                    
                     <p class="card-text text-muted">
                       Created by: {{ group.created_by.get_full_name|default:group.created_by.username }}
                     </p>
@@ -47,14 +73,6 @@
                         {% endif %}
                       {% endfor %}
                     </ul>
-
-                    {% if group.created_by == user %}
-                      <div class="mb-3">
-                        <a href="{% url 'add_roommate' group.id %}" class="btn btn-outline-info btn-sm w-100">
-                          <i class="fas fa-user-plus me-1"></i>Add Roommate
-                        </a>
-                      </div>
-                    {% endif %}
 
                     <!-- Group Actions -->
                     <div class="d-grid gap-2 d-md-flex justify-content-md-between">

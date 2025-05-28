@@ -1,3 +1,4 @@
+# expenses/models.py
 from django.db import models
 from django.contrib.auth.models import User
 from django.utils import timezone
@@ -9,6 +10,12 @@ class RoommateGroup(models.Model):
     
     def __str__(self):
         return self.name
+    
+    def get_all_members(self):
+        """Get all members including the creator"""
+        members = [self.created_by]
+        members.extend([member.user for member in self.members.all()])
+        return members
 
 class RoommateGroupMember(models.Model):
     group = models.ForeignKey(RoommateGroup, on_delete=models.CASCADE, related_name='members')
@@ -40,8 +47,30 @@ class Expense(models.Model):
     group = models.ForeignKey(RoommateGroup, on_delete=models.CASCADE, related_name='expenses')
     date_added = models.DateTimeField(default=timezone.now)
     
+    # New field for excluded members
+    excluded_members = models.ManyToManyField(
+        User, 
+        blank=True, 
+        related_name='excluded_expenses',
+        help_text="Members who should not be included in this expense split"
+    )
+    
     def __str__(self):
         return f"{self.title} - ${self.amount} by {self.paid_by.username}"
+    
+    def get_participating_members(self):
+        """Get list of members who should split this expense"""
+        all_members = self.group.get_all_members()
+        excluded_members_list = list(self.excluded_members.all())
+        participating_members = [member for member in all_members if member not in excluded_members_list]
+        return participating_members
+    
+    def get_individual_share(self):
+        """Calculate how much each participating member should pay"""
+        participating_members = self.get_participating_members()
+        if not participating_members:
+            return 0
+        return self.amount / len(participating_members)
     
     class Meta:
         ordering = ['-date_added']
