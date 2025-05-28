@@ -70,7 +70,7 @@ def dashboard(request):
     monthly_total = Expense.objects.filter(
         group__in=user_groups,
         paid_by=request.user,  # ✅ Add this filter
-        date_added__gte=current_month
+        date_added__gte=current_month,
     ).aggregate(total=Sum('amount'))['total'] or 0
     
     context = {
