@@ -69,17 +69,17 @@
                                     {% for member, data in member_data.items %}
                                     <tr>
                                         <td>{{ member.get_full_name|default:member.username }}</td>
-                                        <td>${{ data.paid|floatformat:2 }}</td>
-                                        <td>${{ data.should_pay|floatformat:2 }}</td>
+                                        <td>Rs{{ data.paid|floatformat:2 }}</td>
+                                        <td>Rs{{ data.should_pay|floatformat:2 }}</td>
                                         <td>
                                             {% if data.balance > 0 %}
                                                 <span class="balance-positive">+Rs{{ data.balance|floatformat:2 }}</span>
                                                 <small class="text-muted d-block">Should receive</small>
                                             {% elif data.balance < 0 %}
-                                                <span class="balance-negative">-${{ data.balance|abs_val|floatformat:2 }}</span>
+                                                <span class="balance-negative">-Rs{{ data.balance|abs_val|floatformat:2 }}</span>
                                                 <small class="text-muted d-block">Owes</small>
                                             {% else %}
-                                                <span class="text-success">$0.00</span>
+                                                <span class="text-success">Rs0.00</span>
                                                 <small class="text-muted d-block">Even</small>
                                             {% endif %}
                                         </td>
@@ -98,12 +98,12 @@
                                 {% if data.balance > 0 %}
                                     <div class="mb-2">
                                         <strong>{{ member.get_full_name|default:member.username }}</strong> should receive 
-                                        <span class="balance-positive">${{ data.balance|floatformat:2 }}</span>
+                                        <span class="balance-positive">Rs{{ data.balance|floatformat:2 }}</span>
                                     </div>
                                 {% elif data.balance < 0 %}
                                     <div class="mb-2">
                                         <strong>{{ member.get_full_name|default:member.username }}</strong> owes 
-                                        <span class="balance-negative">${{ data.balance|abs_val|floatformat:2 }}</span>
+                                        <span class="balance-negative">Rs{{ data.balance|abs_val|floatformat:2 }}</span>
                                     </div>
                                 {% endif %}
                             {% endfor %}
@@ -144,11 +144,11 @@
                                         <span class="badge bg-secondary">{{ expense_info.expense.category|title }}</span>
                                     </td>
                                     <td>{{ expense_info.expense.paid_by.get_full_name|default:expense_info.expense.paid_by.username }}</td>
-                                    <td><strong class="text-success">${{ expense_info.expense.amount }}</strong></td>
+                                    <td><strong class="text-success">Rs{{ expense_info.expense.amount }}</strong></td>
                                     <td>
                                         <div class="small">
                                             <strong>Split among {{ expense_info.participant_count }} member{{ expense_info.participant_count|pluralize }}</strong><br>
-                                            <span class="text-success">${{ expense_info.individual_share|floatformat:2 }} per person</span>
+                                            <span class="text-success">Rs{{ expense_info.individual_share|floatformat:2 }} per person</span>
                                             
                                             {% if expense_info.excluded_members %}
                                                 <br>
