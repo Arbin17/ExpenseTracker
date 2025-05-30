@@ -332,8 +332,14 @@ def expense_detail(request, expense_id):
     # Check if user can edit this expense
     can_edit = (expense.paid_by == request.user or expense.group.created_by == request.user)
     
+    # Calculate split information
+    total_members = expense.group.members.count() + 1  # +1 for group creator
+    cost_per_person = expense.amount / total_members if total_members > 0 else 0
+    
     return render(request, 'expenses/expense_detail.html', {
         'expense': expense,
         'group': expense.group,
-        'can_edit': can_edit
+        'can_edit': can_edit,
+        'total_members': total_members,
+        'cost_per_person': cost_per_person
     })
