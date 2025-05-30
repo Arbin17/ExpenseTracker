@@ -273,3 +273,67 @@ def delete_group(request, group_id):
     
     # If it's a GET request, redirect back to dashboard
     return redirect('dashboard')
+
+@login_required
+def edit_expense(request, expense_id):
+    expense = get_object_or_404(Expense, id=expense_id)
+    
+    # Check if user can edit this expense (must be the person who paid or group creator)
+    if not (expense.paid_by == request.user or expense.group.created_by == request.user):
+        messages.error(request, "You can only edit expenses you created or if you're the group creator.")
+        return redirect('dashboard')
+    
+    if request.method == 'POST':
+        form = ExpenseForm(request.POST, instance=expense)
+        if form.is_valid():
+            form.save()
+            messages.success(request, "Expense updated successfully!")
+            return redirect('monthly_summary', group_id=expense.group.id)
+    else:
+        form = ExpenseForm(instance=expense)
+    
+    return render(request, 'expenses/edit_expense.html', {
+        'form': form, 
+        'expense': expense,
+        'group': expense.group
+    })
+
+@login_required
+def delete_expense(request, expense_id):
+    expense = get_object_or_404(Expense, id=expense_id)
+    
+    # Check if user can delete this expense (must be the person who paid or group creator)
+    if not (expense.paid_by == request.user or expense.group.created_by == request.user):
+        messages.error(request, "You can only delete expenses you created or if you're the group creator.")
+        return redirect('dashboard')
+    
+    if request.method == 'POST':
+        group_id = expense.group.id
+        expense_title = expense.title
+        expense.delete()
+        messages.success(request, f"Expense '{expense_title}' deleted successfully!")
+        return redirect('monthly_summary', group_id=group_id)
+    
+    return render(request, 'expenses/confirm_delete.html', {
+        'expense': expense,
+        'group': expense.group
+    })
+
+@login_required
+def expense_detail(request, expense_id):
+    expense = get_object_or_404(Expense, id=expense_id)
+    
+    # Check if user is member of the group
+    if not (expense.group.created_by == request.user or 
+            RoommateGroupMember.objects.filter(group=expense.group, user=request.user).exists()):
+        messages.error(request, "You are not a member of this group.")
+        return redirect('dashboard')
+    
+    # Check if user can edit this expense
+    can_edit = (expense.paid_by == request.user or expense.group.created_by == request.user)
+    
+    return render(request, 'expenses/expense_detail.html', {
+        'expense': expense,
+        'group': expense.group,
+        'can_edit': can_edit
+    })

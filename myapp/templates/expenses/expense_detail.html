@@ -1,0 +1,114 @@
+{% extends 'expenses/base.html' %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card card-custom">
+            <div class="card-body p-5">
+                <div class="d-flex justify-content-between align-items-start mb-4">
+                    <h2><i class="fas fa-receipt me-2"></i>Expense Details</h2>
+                    {% if can_edit %}
+                    <div class="dropdown">
+                        <button class="btn btn-outline-secondary dropdown-toggle" type="button" id="expenseActions" data-bs-toggle="dropdown">
+                            <i class="fas fa-cog me-2"></i>Actions
+                        </button>
+                        <ul class="dropdown-menu">
+                            <li><a class="dropdown-item" href="{% url 'edit_expense' expense.id %}">
+                                <i class="fas fa-edit me-2"></i>Edit Expense
+                            </a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item text-danger" href="{% url 'delete_expense' expense.id %}">
+                                <i class="fas fa-trash me-2"></i>Delete Expense
+                            </a></li>
+                        </ul>
+                    </div>
+                    {% endif %}
+                </div>
+                
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="expense-detail-card p-4 border rounded">
+                            <h4 class="text-primary">{{ expense.title }}</h4>
+                            <hr>
+                            <div class="detail-row mb-3">
+                                <strong>Amount:</strong>
+                                <span class="text-success fs-4">${{ expense.amount }}</span>
+                            </div>
+                            <div class="detail-row mb-3">
+                                <strong>Category:</strong>
+                                <span class="badge bg-secondary ms-2">{{ expense.get_category_display }}</span>
+                            </div>
+                            <div class="detail-row mb-3">
+                                <strong>Group:</strong>
+                                <span class="text-muted">{{ expense.group.name }}</span>
+                            </div>
+                            <div class="detail-row mb-3">
+                                <strong>Paid by:</strong>
+                                <span class="text-info">{{ expense.paid_by.get_full_name|default:expense.paid_by.username }}</span>
+                            </div>
+                            <div class="detail-row mb-3">
+                                <strong>Date:</strong>
+                                <span class="text-muted">{{ expense.date_added|date:"F d, Y \a\t g:i A" }}</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        {% if expense.description %}
+                        <div class="description-card p-4 border rounded">
+                            <h5><i class="fas fa-sticky-note me-2"></i>Description</h5>
+                            <hr>
+                            <p class="text-muted">{{ expense.description|linebreaks }}</p>
+                        </div>
+                        {% endif %}
+                        
+                        <div class="split-info-card p-4 border rounded mt-3">
+                            <h5><i class="fas fa-calculator me-2"></i>Split Information</h5>
+                            <hr>
+                            {% with total_members=expense.group.members.count|add:1 %}
+                            <div class="detail-row mb-2">
+                                <strong>Total Members:</strong>
+                                <span>{{ total_members }}</span>
+                            </div>
+                            <div class="detail-row mb-2">
+                                <strong>Cost per person:</strong>
+                                <span class="text-primary">${{ expense.amount|div:total_members|floatformat:2 }}</span>
+                            </div>
+                            {% endwith %}
+                        </div>
+                    </div>
+                </div>
+                
+                {% if can_edit %}
+                <div class="alert alert-info mt-4">
+                    <i class="fas fa-info-circle me-2"></i>
+                    You can edit or delete this expense because you {% if expense.paid_by == user %}created it{% else %}are the group creator{% endif %}.
+                </div>
+                {% endif %}
+                
+                <div class="text-center mt-4">
+                    <a href="{% url 'monthly_summary' group.id %}" class="btn btn-outline-primary me-2">
+                        <i class="fas fa-chart-bar me-2"></i>View Monthly Summary
+                    </a>
+                    <a href="{% url 'dashboard' %}" class="btn btn-outline-secondary">
+                        <i class="fas fa-home me-2"></i>Back to Dashboard
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.expense-detail-card, .description-card, .split-info-card {
+    background: rgba(255, 255, 255, 0.05);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.1) !important;
+}
+
+.detail-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+</style>
+{% endblock %}
